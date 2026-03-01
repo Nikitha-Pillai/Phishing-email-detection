@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+env/
+bert_model/
+# Environment files
+.env
+
+# Google / Firebase credentials
+credentials.json
+firebase_key.json
+token.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
