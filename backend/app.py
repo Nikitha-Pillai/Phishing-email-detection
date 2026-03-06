@@ -157,12 +157,13 @@ def process_latest_email():
 
     if confidence < 0.95:
         db.collection("low_confidence").document(msg_id).set({
-            "email_id": msg_id,
-            "subject": subject,
-            "content": cleaned_body,
-            "prediction": label,
-            "confidence": confidence
-        })
+        "email_id": msg_id,
+        "subject": subject,
+        "content": cleaned_body,
+        "prediction": label,
+        "confidence": confidence,
+        "feedback_given": False
+    })
 
     print("Email processed:", subject)
 
@@ -285,6 +286,52 @@ def get_emails():
         email_list.append(doc.to_dict())
 
     return jsonify(email_list)
+
+@app.route("/api/low-confidence")
+def get_low_confidence():
+
+    docs = db.collection("low_confidence")\
+             .where("feedback_given", "==", False)\
+             .stream()
+
+    emails = []
+
+    for doc in docs:
+        emails.append(doc.to_dict())
+
+    return jsonify(emails)
+
+@app.route("/api/submit-feedback", methods=["POST"])
+def submit_feedback():
+
+    data = request.json
+
+    email_id = data["email_id"]
+    user_label = data["user_label"]
+
+    doc = db.collection("low_confidence").document(email_id).get()
+
+    if not doc.exists:
+        return jsonify({"error": "Email not found"}), 404
+
+    email_data = doc.to_dict()
+
+    # Save feedback
+    db.collection("user_feedback").add({
+        "email_id": email_id,
+        "subject": email_data["subject"],
+        "content": email_data["content"],
+        "user_label": user_label,
+        "model_prediction": email_data["prediction"],
+        "confidence": email_data["confidence"]
+    })
+
+    # Mark feedback as given
+    db.collection("low_confidence").document(email_id).update({
+        "feedback_given": True
+    })
+
+    return jsonify({"message": "Feedback stored"})
 
 
 # ==========================================================
