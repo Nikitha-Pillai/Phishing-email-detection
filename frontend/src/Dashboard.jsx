@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 
 function Dashboard() {
@@ -36,7 +36,7 @@ function Dashboard() {
             <tbody>
 
               {emails.map((email, index) => (
-                <>
+                <React.Fragment key={email.email_id}>
                   <tr
                     key={index}
                     className={`row ${expandedIndex === index ? "active" : ""}`}
@@ -78,7 +78,7 @@ function Dashboard() {
                     </tr>
                   )}
 
-                </>
+                </React.Fragment>
               ))}
 
             </tbody>
