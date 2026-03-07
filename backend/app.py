@@ -1,5 +1,9 @@
+import threading
+from service2_generator import background_worker
+
 from flask import Flask, redirect, session, request, jsonify
 from flask_cors import CORS
+
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -7,13 +11,16 @@ from googleapiclient.discovery import build
 
 import os
 import base64
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+
 from bs4 import BeautifulSoup
 
 import torch
 import torch.nn.functional as F
 from transformers import BertTokenizer, BertForSequenceClassification
+
 
 # ==========================================================
 # CONFIG
@@ -34,6 +41,7 @@ CORS(app)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+
 # ==========================================================
 # FIREBASE INIT
 # ==========================================================
@@ -42,25 +50,21 @@ cred = credentials.Certificate("firebase_key.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+
 # ==========================================================
-# LOAD MODEL (LAZY LOADING FIX)
+# LOAD BERT MODEL AT STARTUP
 # ==========================================================
 
 MODEL_PATH = "bert_model"
 
-tokenizer = None
-model = None
+print("Loading BERT model...")
 
+tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
+model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
 
-def load_model():
-    global tokenizer, model
+model.eval()
 
-    if tokenizer is None or model is None:
-        print("Loading BERT model...")
-        tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
-        model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
-        model.eval()
-        print("Model loaded")
+print("BERT model loaded successfully")
 
 
 # ==========================================================
@@ -68,8 +72,6 @@ def load_model():
 # ==========================================================
 
 def detect_email(text):
-
-    load_model()
 
     inputs = tokenizer(
         text,
@@ -83,6 +85,7 @@ def detect_email(text):
         outputs = model(**inputs)
 
     probs = F.softmax(outputs.logits, dim=1)
+
     confidence, predicted = torch.max(probs, dim=1)
 
     label = "Phishing" if predicted.item() == 1 else "Legitimate"
@@ -93,21 +96,27 @@ def detect_email(text):
 def clean_html(html_content):
 
     soup = BeautifulSoup(html_content, "html.parser")
+
     return soup.get_text(separator=" ", strip=True)
 
 
 def get_email_body(payload):
 
     if "parts" in payload:
+
         for part in payload["parts"]:
 
             if part["mimeType"] == "text/plain":
+
                 data = part["body"].get("data")
+
                 if data:
                     return base64.urlsafe_b64decode(data).decode("utf-8")
 
             if part["mimeType"] == "text/html":
+
                 data = part["body"].get("data")
+
                 if data:
                     html = base64.urlsafe_b64decode(data).decode("utf-8")
                     return clean_html(html)
@@ -160,7 +169,7 @@ def process_latest_email():
         service = get_gmail_service()
 
         if not service:
-            print("No Gmail token")
+            print("No Gmail token found")
             return
 
         results = service.users().messages().list(
@@ -199,7 +208,9 @@ def process_latest_email():
 
             body = get_email_body(payload)
 
-            label, confidence = detect_email(subject + " " + body)
+            text = subject + " " + body
+
+            label, confidence = detect_email(text)
 
             db.collection("emails").document(msg_id).set({
                 "email_id": msg_id,
@@ -217,10 +228,12 @@ def process_latest_email():
                     "content": body,
                     "prediction": label,
                     "confidence": confidence,
-                    "feedback_given": False
+                    "feedback_given": False,
+                    "synthetic_generated": False,
+                    "bert_training_status": "pending"
                 })
 
-            print("Email processed:", subject)
+            print("Processed email:", subject)
 
             break
 
@@ -241,6 +254,10 @@ def home():
 def health():
     return "OK"
 
+
+# ==========================================================
+# GMAIL LOGIN
+# ==========================================================
 
 @app.route("/login")
 def login():
@@ -306,7 +323,7 @@ def gmail_webhook():
     if not envelope or "message" not in envelope:
         return ("Bad Request", 400)
 
-    print("Gmail push received")
+    print("Gmail push notification received")
 
     process_latest_email()
 
@@ -335,7 +352,9 @@ def get_low_confidence():
     emails = []
 
     for doc in docs:
+
         data = doc.to_dict()
+
         if data.get("feedback_given") == False:
             emails.append(data)
 
@@ -374,8 +393,21 @@ def submit_feedback():
 
 
 # ==========================================================
-# RUN
+# START BACKGROUND WORKER
+# ==========================================================
+
+worker = threading.Thread(target=background_worker)
+worker.daemon = True
+worker.start()
+
+
+# ==========================================================
+# RUN (LOCAL ONLY)
 # ==========================================================
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8080))
+    )
