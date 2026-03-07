@@ -9,4 +9,4 @@ COPY . .
 
 ENV PORT=8080
 
-CMD exec gunicorn --bind :$PORT --timeout 120 --workers 1 app:app
+CMD exec gunicorn --bind :$PORT app:app
