@@ -1,0 +1,13 @@
+{
+ "id": "prophisher/tinyllama-email-generator",
+ "title": "tinyllama-email-generator",
+ "code_file": "generator.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_internet": true,
+ "dataset_sources": [
+  "prophisher/firebase-key"
+ ]
+}

@@ -349,7 +349,8 @@ def submit_feedback():
         "content": email_data["content"],
         "user_label": user_label,
         "model_prediction": email_data["prediction"],
-        "confidence": email_data["confidence"]
+        "confidence": email_data["confidence"],
+        "generation_status":"pending"
     })
 
     db.collection("low_confidence").document(email_id).update({
