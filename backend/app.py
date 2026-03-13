@@ -284,6 +284,45 @@ def oauth2callback():
     return "Gmail Connected Successfully!"
 
 # ==========================================================
+# START GMAIL WATCH
+# ==========================================================
+
+@app.route("/start-watch")
+def start_watch():
+
+    try:
+
+        service = get_gmail_service()
+
+        if not service:
+            return jsonify({"error": "Gmail not connected"}), 400
+
+        watch_request = {
+            "labelIds": ["INBOX"],
+            "topicName": PUBSUB_TOPIC
+        }
+
+        response = service.users().watch(
+            userId="me",
+            body=watch_request
+        ).execute()
+
+        print("Gmail watch started:", response)
+
+        return jsonify({
+            "message": "Gmail watch started",
+            "response": response
+        })
+
+    except Exception as e:
+
+        print("Watch start error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+# ==========================================================
 # PUBSUB WEBHOOK
 # ==========================================================
 
@@ -350,7 +389,7 @@ def submit_feedback():
         "user_label": user_label,
         "model_prediction": email_data["prediction"],
         "confidence": email_data["confidence"],
-        "generation_status":"pending"
+        "generation_status": "pending"
     })
 
     db.collection("low_confidence").document(email_id).update({
