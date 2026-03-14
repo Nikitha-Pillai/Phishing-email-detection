@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 
 function Dashboard() {
-
   const [emails, setEmails] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
 
@@ -15,16 +14,13 @@ function Dashboard() {
 
   return (
     <div className="app">
-
       <h1 className="title">🛡️ AI Phishing Detection Dashboard</h1>
 
       <div className="table-container">
-
         {emails.length === 0 ? (
           <p className="empty">No emails found.</p>
         ) : (
           <table className="email-table">
-
             <thead>
               <tr>
                 <th>Subject</th>
@@ -34,17 +30,16 @@ function Dashboard() {
             </thead>
 
             <tbody>
-
               {emails.map((email, index) => (
                 <React.Fragment key={email.email_id}>
                   <tr
-                    key={index}
-                    className={`row ${expandedIndex === index ? "active" : ""}`}
+                    className={`row ${
+                      expandedIndex === index ? "active" : ""
+                    }`}
                     onClick={() =>
                       setExpandedIndex(expandedIndex === index ? null : index)
                     }
                   >
-
                     <td className="subject">
                       {email.subject || "No Subject"}
                     </td>
@@ -64,9 +59,9 @@ function Dashboard() {
                     <td className="center confidence">
                       {email.confidence
                         ? (email.confidence * 100).toFixed(2)
-                        : "0.00"}%
+                        : "0.00"}
+                      %
                     </td>
-
                   </tr>
 
                   {expandedIndex === index && (
@@ -74,19 +69,41 @@ function Dashboard() {
                       <td colSpan="3">
                         <strong>Email Body:</strong>
                         <p>{email.content}</p>
+
+                        <br />
+
+                        <strong>AI Explanation (LIME):</strong>
+
+                        {email.lime_explanation &&
+                        email.lime_explanation.length > 0 ? (
+                          <div className="lime-box">
+                            {email.lime_explanation.map((item, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  item.score > 0
+                                    ? "lime-word positive"
+                                    : "lime-word negative"
+                                }
+                              >
+                                {item.word} ({item.score.toFixed(2)})
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="no-lime">
+                            No explanation available.
+                          </p>
+                        )}
                       </td>
                     </tr>
                   )}
-
                 </React.Fragment>
               ))}
-
             </tbody>
           </table>
         )}
-
       </div>
-
     </div>
   );
 }

@@ -1,0 +1,14 @@
+{
+  "id": "prophisher/lime-explainer",
+  "title": "LIME Explainer",
+  "code_file": "lime_explainer.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "prophisher/firebase-key",
+    "prophisher/bert-model"
+  ]
+}

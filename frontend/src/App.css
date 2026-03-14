@@ -110,3 +110,30 @@
   text-align: center;
   color: #6b7280;
 }
+.lime-box{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.lime-word{
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:13px;
+}
+
+.lime-word.positive{
+  background:#ffd6d6;
+  color:#b30000;
+}
+
+.lime-word.negative{
+  background:#d6ffd6;
+  color:#006600;
+}
+
+.no-lime{
+  color:#777;
+  font-size:13px;
+}
